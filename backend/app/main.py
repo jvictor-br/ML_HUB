@@ -5,9 +5,9 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from datetime import datetime # Importante para o teste imediato
 
 from app.core.database import db
-from app.routes import auth, ml_auth, lojas, products
+from app.routes import auth, ml_auth, lojas, products, integrations
 from app.services.token_manager import refresh_expiring_tokens
-from fastapi.middleware.cors import CORSMiddleware  # <--- FALTAVA ESSA LINHA
+from fastapi.middleware.cors import CORSMiddleware
 
 # Cria o agendador
 scheduler = AsyncIOScheduler()
@@ -35,7 +35,9 @@ app = FastAPI(lifespan=lifespan)
 app.include_router(auth.router, prefix="/auth", tags=["Autenticação"])
 app.include_router(ml_auth.router, prefix="/ml", tags=["Mercado Livre"])
 app.include_router(lojas.router, prefix="/api", tags=["Lojas"])
-app.include_router(products.router, prefix="/products", tags=["Produtos"]) # <--- Adicionar
+app.include_router(products.router, prefix="/products", tags=["Produtos"])
+app.include_router(integrations.router, prefix="/api", tags=["Integrações"])
+
 
 # ... imports
 
@@ -49,7 +51,7 @@ origins = [
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], # Ou use ["*"] para liberar TUDO (modo preguiçoso/dev)
+    allow_origins=origins, # Ou use ["*"] para liberar TUDO (modo preguiçoso/dev)
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

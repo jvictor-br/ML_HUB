@@ -3,6 +3,7 @@ from fastapi.security import OAuth2PasswordRequestForm
 from app.models.models import UserCreate, UserResponse, UserInDB
 from app.core.database import db
 from app.core.security import get_password_hash, verify_password, create_access_token, ACCESS_TOKEN_EXPIRE_MINUTES
+from app.auth_utils import get_current_active_user
 from datetime import timedelta
 
 router = APIRouter()
@@ -49,3 +50,10 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends()):
     )
     
     return {"access_token": access_token, "token_type": "bearer"}
+
+@router.get("/users/me", response_model=UserResponse)
+async def read_users_me(current_user: UserInDB = Depends(get_current_active_user)):
+    """
+    Endpoint protegido para obter os dados do usuário logado.
+    """
+    return current_user
