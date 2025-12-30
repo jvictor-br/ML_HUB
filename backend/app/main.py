@@ -49,7 +49,7 @@ origins = [
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins, # Ou use ["*"] para liberar TUDO (modo preguiçoso/dev)
+    allow_origins=["*"], # Ou use ["*"] para liberar TUDO (modo preguiçoso/dev)
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

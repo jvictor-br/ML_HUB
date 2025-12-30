@@ -59,48 +59,96 @@ const Input = ({ label, type = "text", value, onChange, placeholder, icon: Icon 
 );
 
 const LoginScreen = ({ onLogin }) => {
+  const [isRegister, setIsRegister] = useState(false);
+  const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+
+  const handleLogin = async () => {
+    const formData = new URLSearchParams();
+    formData.append('username', email); // API de login espera 'username' para o campo de email
+    formData.append('password', password);
+
+    const response = await fetch(`${API_URL}/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const err = await response.json();
+      throw new Error(err.detail || 'Falha na autenticação');
+    }
+
+    const data = await response.json();
+    onLogin(data.access_token);
+  };
+
+  const handleRegister = async () => {
+    if (password.length < 6) {
+      throw new Error("A senha deve ter pelo menos 6 caracteres.");
+    }
+    const response = await fetch(`${API_URL}/auth/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, email, password }),
+    });
+
+    if (!response.ok) {
+      const err = await response.json();
+      throw new Error(err.detail || 'Falha no registro.');
+    }
+    
+    setSuccess('Usuário criado com sucesso! Faça o login.');
+    setIsRegister(false); // Volta para a tela de login
+    // Limpa os campos para o login
+    setUsername('');
+    setPassword('');
+    // O email é mantido para conveniência
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError('');
+    setSuccess('');
 
     try {
-      const formData = new URLSearchParams();
-      formData.append('username', email); 
-      formData.append('password', password);
-
-      const response = await fetch(`${API_URL}/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: formData,
-      });
-
-      if (!response.ok) throw new Error('Falha na autenticação');
-
-      const data = await response.json();
-      onLogin(data.access_token);
+      if (isRegister) {
+        await handleRegister();
+      } else {
+        await handleLogin();
+      }
     } catch (err) {
       console.error(err);
-      setError('Email ou senha incorretos. Verifique se o backend está rodando.');
+      setError(err.message || 'Ocorreu um erro. Tente novamente.');
     } finally {
       setLoading(false);
     }
   };
 
+  const toggleMode = () => {
+    setIsRegister(!isRegister);
+    setError('');
+    setSuccess('');
+    // Limpar campos ao trocar de modo
+    setUsername('');
+    setEmail('');
+    setPassword('');
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center p-4 font-sans text-gray-900">
-      <div className="bg-white max-w-md w-full rounded-2xl shadow-xl shadow-blue-900/5 p-8 space-y-8 border border-white/50 backdrop-blur-sm">
+      <div className="bg-white max-w-md w-full rounded-2xl shadow-xl shadow-blue-900/5 p-8 space-y-6 border border-white/50 backdrop-blur-sm">
         <div className="text-center space-y-2">
           <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-blue-100 text-blue-600 mb-2">
             <LayoutDashboard size={24} />
           </div>
           <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Fixwell<span className="text-blue-600">Hub</span></h1>
-          <p className="text-gray-500">Faça login para gerenciar sua operação</p>
+          <p className="text-gray-500">{isRegister ? 'Crie sua conta para começar' : 'Faça login para gerenciar sua operação'}</p>
         </div>
 
         {error && (
@@ -110,7 +158,23 @@ const LoginScreen = ({ onLogin }) => {
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+        {success && (
+          <div className="bg-emerald-50 text-emerald-600 p-4 rounded-xl flex items-start gap-3 text-sm border border-emerald-100 animate-in fade-in slide-in-from-top-2">
+            <AlertCircle size={18} className="shrink-0 mt-0.5" />
+            <span>{success}</span>
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="space-y-5">
+          {isRegister && (
+            <Input 
+              label="Nome de Usuário" 
+              placeholder="seu_usuario" 
+              value={username} 
+              onChange={(e) => setUsername(e.target.value)}
+              icon={User}
+            />
+          )}
           <Input 
             label="Email" 
             placeholder="seu@email.com" 
@@ -128,9 +192,16 @@ const LoginScreen = ({ onLogin }) => {
           />
           
           <Button type="submit" className="w-full py-3.5 text-lg shadow-blue-500/20 shadow-lg hover:shadow-blue-500/30 hover:-translate-y-0.5 transition-transform" loading={loading}>
-            {loading ? 'Autenticando...' : 'Acessar Painel'}
+            {loading ? (isRegister ? 'Criando conta...' : 'Autenticando...') : (isRegister ? 'Criar Conta' : 'Acessar Painel')}
           </Button>
         </form>
+
+        <p className="text-center text-sm text-gray-600 pt-4 border-t border-gray-100">
+          {isRegister ? 'Já tem uma conta? ' : 'Ainda não tem uma conta? '}
+          <button onClick={toggleMode} className="font-semibold text-blue-600 hover:text-blue-700 underline-offset-2 hover:underline focus:outline-none">
+            {isRegister ? 'Faça Login' : 'Cadastre-se'}
+          </button>
+        </p>
       </div>
     </div>
   );
