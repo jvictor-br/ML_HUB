@@ -9,6 +9,5 @@ DB_NAME = os.getenv("DB_NAME")
 if not MONGO_URL:
     raise ValueError("A variável MONGO_URL não foi definida no .env")
 
-# Cria a conexão
 client = AsyncIOMotorClient(MONGO_URL)
 db = client[DB_NAME]
